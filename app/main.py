@@ -2,12 +2,13 @@ from fastapi import FastAPI
 
 from app.database import engine
 from app.models import Base
-from app.routers import projects, tasks, users
+from app.routers import projects, tasks, tags, users
 
 app = FastAPI(title="TaskHub API", version="0.1.0")
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(projects.router, prefix="/api/projects", tags=["projects"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
+app.include_router(tags.router, prefix="/api/tags", tags=["tags"])
 
 
 @app.on_event("startup")
