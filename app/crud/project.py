@@ -1,11 +1,21 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from app.models.models import Project
+from app.models.models import Project, Task
 from app.schemas.project import ProjectCreate
 
 
 def get_project(db: Session, project_id: int) -> Project | None:
     return db.query(Project).filter(Project.id == project_id).first()
+
+
+def get_project_with_tasks(db: Session, project_id: int) -> Project | None:
+    """Fetch project with all tasks eager loaded using joinedload."""
+    return (
+        db.query(Project)
+        .options(joinedload(Project.tasks).joinedload(Task.tags))
+        .filter(Project.id == project_id)
+        .first()
+    )
 
 
 def get_projects(db: Session) -> list[Project]:

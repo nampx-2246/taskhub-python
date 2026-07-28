@@ -27,6 +27,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(128), unique=True, nullable=False, index=True)
     email = Column(String(256), unique=True, nullable=False, index=True)
     full_name = Column(String(256), nullable=False)
     is_active = Column(BOOLEAN, default=True, nullable=False)
