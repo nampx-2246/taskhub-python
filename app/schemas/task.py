@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from app.schemas.tag import TagRead
 
 
 class TaskBase(BaseModel):
@@ -14,12 +15,20 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     project_id: int
     assignee_id: Optional[int] = None
+    tag_ids: Optional[list[int]] = []
+
+
+class TaskCreateInProject(TaskBase):
+    assignee_id: Optional[int] = None
+    tag_ids: Optional[list[int]] = []
 
 
 class TaskRead(TaskBase):
     id: int
     project_id: int
     assignee_id: Optional[int] = None
+    created_at: Optional[datetime] = None
+    tags: list[TagRead] = []
 
     class Config:
         from_attributes = True
