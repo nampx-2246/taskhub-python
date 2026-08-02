@@ -30,8 +30,40 @@ def get_current_user(
     user = db.query(User).filter(User.username == username).first()
     if user is None:
         raise credentials_exception
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
-        )
     return user
+
+
+def get_current_active_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Dependency to ensure the authenticated user is active."""
+    if not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Inactive user",
+        )
+    return current_user
+
+
+def verify_admin_role(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """Dependency to enforce admin-only access."""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required",
+        )
+    return current_user
+
+
+def verify_project_manager(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """Dependency to enforce project manager or admin access."""
+    if current_user.role not in {"project_manager", "admin"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Project manager privileges required",
+        )
+    return current_user

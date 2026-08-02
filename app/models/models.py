@@ -22,6 +22,13 @@ task_tags = Table(
     Column("tag_id", ForeignKey("tags.id"), primary_key=True),
 )
 
+task_bookmarks = Table(
+    "task_bookmarks",
+    Base.metadata,
+    Column("task_id", ForeignKey("tasks.id"), primary_key=True),
+    Column("user_id", ForeignKey("users.id"), primary_key=True),
+)
+
 
 class User(Base):
     __tablename__ = "users"
@@ -31,12 +38,18 @@ class User(Base):
     email = Column(String(256), unique=True, nullable=False, index=True)
     full_name = Column(String(256), nullable=False)
     hashed_password = Column(String(256), nullable=False)
+    role = Column(String(64), default="user", nullable=False)
     is_active = Column(BOOLEAN, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="assignee")
     comments = relationship("Comment", back_populates="author")
+    bookmarked_tasks = relationship(
+        "Task",
+        secondary=task_bookmarks,
+        back_populates="bookmarked_by",
+    )
 
 
 class Project(Base):
@@ -70,6 +83,11 @@ class Task(Base):
     assignee = relationship("User", back_populates="tasks")
     comments = relationship("Comment", back_populates="task", cascade="all, delete-orphan")
     tags = relationship("Tag", secondary=task_tags, back_populates="tasks")
+    bookmarked_by = relationship(
+        "User",
+        secondary=task_bookmarks,
+        back_populates="bookmarked_tasks",
+    )
 
 
 class Comment(Base):
