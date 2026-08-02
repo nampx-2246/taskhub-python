@@ -8,13 +8,36 @@ def get_task(db: Session, task_id: int) -> Task | None:
     return db.query(Task).options(joinedload(Task.tags)).filter(Task.id == task_id).first()
 
 
-def get_tasks_by_project_id(db: Session, project_id: int) -> list[Task]:
+def get_tasks(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    status: str | None = None,
+    priority: str | None = None,
+) -> list[Task]:
+    """Get tasks with optional status and priority filters."""
+    query = db.query(Task).options(joinedload(Task.tags)).order_by(Task.id)
+    if status:
+        query = query.filter(Task.status == status.lower())
+    if priority:
+        query = query.filter(Task.priority == priority.lower())
+    return query.offset(skip).limit(limit).all()
+
+
+def get_tasks_by_project_id(
+    db: Session,
+    project_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Task]:
     """Get tasks of a project eager loading tags using joinedload."""
     return (
         db.query(Task)
         .options(joinedload(Task.tags))
         .filter(Task.project_id == project_id)
         .order_by(Task.id)
+        .offset(skip)
+        .limit(limit)
         .all()
     )
 
@@ -41,3 +64,15 @@ def create_task_in_project(db: Session, project_id: int, task: TaskCreateInProje
     db.commit()
     db.refresh(db_task)
     return db_task
+
+
+def bookmark_task(db: Session, task_id: int, user) -> Task | None:
+    task = get_task(db=db, task_id=task_id)
+    if not task:
+        return None
+    if user not in task.bookmarked_by:
+        task.bookmarked_by.append(user)
+        db.add(task)
+        db.commit()
+        db.refresh(task)
+    return task
