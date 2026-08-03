@@ -23,6 +23,10 @@ class TaskCreateInProject(TaskBase):
     tag_ids: Optional[list[int]] = []
 
 
+class TaskAssign(BaseModel):
+    assignee_id: int
+
+
 class TaskRead(TaskBase):
     id: int
     project_id: int
