@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_active_user, verify_project_manager
+from app.core.email import send_comment_notification_email
 from app.crud.comment import create_comment, delete_comment, get_comment, update_comment
 from app.crud.task import assign_task, bookmark_task, create_task, get_task, get_tasks
 from app.database import get_db
@@ -59,11 +60,16 @@ def assign_task_endpoint(
 @router.post("/{task_id}/comments", response_model=CommentRead, status_code=status.HTTP_201_CREATED)
 def create_task_comment(
     *,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     task_id: int,
     comment_in: CommentCreate,
     current_user: User = Depends(get_current_active_user),
 ):
+    db_task = get_task(db=db, task_id=task_id)
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
     db_comment = create_comment(
         db=db,
         task_id=task_id,
@@ -72,6 +78,15 @@ def create_task_comment(
     )
     if not db_comment:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    if db_task.project and db_task.project.owner and db_task.project.owner.email:
+        background_tasks.add_task(
+            send_comment_notification_email,
+            task_id,
+            db_comment.id,
+            db_task.project.owner.email,
+            db_comment.content,
+        )
     return db_comment
 
 
