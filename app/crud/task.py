@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 
-from app.models.models import Tag, Task
+from app.models.models import Tag, Task, User
 from app.schemas.task import TaskCreate, TaskCreateInProject
 
 
@@ -64,6 +64,20 @@ def create_task_in_project(db: Session, project_id: int, task: TaskCreateInProje
     db.commit()
     db.refresh(db_task)
     return db_task
+
+
+def assign_task(db: Session, task_id: int, assignee_id: int) -> Task | None:
+    task = get_task(db=db, task_id=task_id)
+    if not task:
+        return None
+    assignee = db.query(User).filter(User.id == assignee_id).first()
+    if not assignee:
+        return None
+    with db.begin():
+        task.assignee_id = assignee_id
+        db.add(task)
+    db.refresh(task)
+    return task
 
 
 def bookmark_task(db: Session, task_id: int, user) -> Task | None:
